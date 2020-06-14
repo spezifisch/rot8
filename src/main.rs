@@ -176,6 +176,13 @@ fn main() -> Result<(), String> {
             .value_name("THRESHOLD")
             .help("Set a rotation threshold between 0 and 1")
             .takes_value(true),
+	Arg::with_name("onchange")
+            .default_value("")
+            .long("on-change")
+            .short("c")
+            .value_name("ON-CHANGE")
+            .help("Execute a command after every rotation change in the form '<ON-CHANGE> <DISPLAY> <ROTATION>'")
+            .takes_value(true),
     ];
 
     match backend {
@@ -200,6 +207,7 @@ fn main() -> Result<(), String> {
     let touchscreen = matches.value_of("touchscreen").unwrap_or("default.conf");
     let disable_keyboard = matches.is_present("keyboard");
     let threshold = matches.value_of("threshold").unwrap_or("default.conf");
+    let onchange = matches.value_of("onchange").unwrap_or("default.conf");
     let old_state_owned = get_window_server_rotation_state(display, &backend)?;
     let mut old_state = old_state_owned.as_str();
 
@@ -304,6 +312,13 @@ fn main() -> Result<(), String> {
                                 .expect("Swaymsg keyboard command wait failed");
                         }
                     }
+		    if onchange.len() > 0 {
+		        Command::new(onchange)
+                            .arg(display)
+                            .arg(new_state)
+                            .spawn()
+			    .expect("Failed to run on-change command");
+		    }
                 }
                 Backend::Xorg => {
                     Command::new("xrandr")
