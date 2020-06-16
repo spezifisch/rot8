@@ -317,7 +317,9 @@ fn main() -> Result<(), String> {
                             .arg(display)
                             .arg(new_state)
                             .spawn()
-			    .expect("Failed to run on-change command");
+			    .expect("Failed to run on-change command")
+			    .wait()
+			    .expect("Failed waiting for on-change command");
 		    }
                 }
                 Backend::Xorg => {
