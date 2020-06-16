@@ -200,7 +200,13 @@ fn main() -> Result<(), String> {
             .short("m")
             .help("Invert the accelerator y axis value")
             .takes_value(false),
-
+	Arg::with_name("onchange")
+            .default_value("")
+            .long("on-change")
+            .short("c")
+            .value_name("ON-CHANGE")
+            .help("Execute a command after every rotation change in the form '<ON-CHANGE> <DISPLAY> <ROTATION>'")
+            .takes_value(true),
     ];
 
     match backend {
@@ -229,6 +235,7 @@ fn main() -> Result<(), String> {
     let y_file = matches.value_of("y_file").unwrap_or("");
     let x_mult = if matches.is_present("x_inv") { -1.0_f32 } else { 1.0_f32 };
     let y_mult = if matches.is_present("y_inv") { -1.0_f32 } else { 1.0_f32 }; 
+    let onchange = matches.value_of("onchange").unwrap_or("default.conf");
     let old_state_owned = get_window_server_rotation_state(display, &backend)?;
     let mut old_state = old_state_owned.as_str();
 
@@ -339,6 +346,13 @@ fn main() -> Result<(), String> {
                                 .expect("Swaymsg keyboard command wait failed");
                         }
                     }
+		    if onchange.len() > 0 {
+		        Command::new(onchange)
+                            .arg(display)
+                            .arg(new_state)
+                            .spawn()
+			    .expect("Failed to run on-change command");
+		    }
                 }
                 Backend::Xorg => {
                     Command::new("xrandr")
