@@ -1,5 +1,8 @@
 # rot8
 
+Fork of https://github.com/Dejvino/rot8 (adding `x/y-file` parameters) which is a fork of https://github.com/efernau/rot8 (before efernau/rot8#20 was merged and made my `scale` parameter obsolete). 
+
+
 ## automatic display rotation using built-in accelerometer
 
 Automatic rotate modern Linux desktop screen and input devices. Handy for
