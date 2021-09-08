@@ -176,31 +176,37 @@ fn main() -> Result<(), String> {
             .value_name("THRESHOLD")
             .help("Set a rotation threshold between 0 and 1")
             .takes_value(true),
-	Arg::with_name("x_file")
+	    Arg::with_name("x_file")
             .default_value("<auto-detected>")
             .long("x-file")
             .short("x")
             .value_name("X_FILE")
             .help("Set file path for accelerator x axis (e.g. /sys/bus/iio/devices/iio:device0/in_accel_x_raw)")
             .takes_value(true),
-	Arg::with_name("y_file")
+	    Arg::with_name("y_file")
             .default_value("<auto-detected>")
             .long("y-file")
             .short("y")
             .value_name("Y_FILE")
             .help("Set file path for accelerator y axis (e.g. /sys/bus/iio/devices/iio:device0/in_accel_y_raw)")
             .takes_value(true),
-	Arg::with_name("x_inv")
+	    Arg::with_name("x_inv")
             .long("x-invert")
             .short("n")
             .help("Invert the accelerator x axis value")
             .takes_value(false),
-	Arg::with_name("y_inv")
+	    Arg::with_name("y_inv")
             .long("y-invert")
             .short("m")
             .help("Invert the accelerator y axis value")
             .takes_value(false),
-
+        Arg::with_name("scale")
+            .default_value("1e-6")
+            .long("scale")
+            .short("a")
+            .value_name("SCALE")
+            .help("Set scale factor to normalize x/y raw values into range from 0 to 1")
+            .takes_value(true),
     ];
 
     match backend {
@@ -229,6 +235,7 @@ fn main() -> Result<(), String> {
     let y_file = matches.value_of("y_file").unwrap_or("");
     let x_mult = if matches.is_present("x_inv") { -1.0_f32 } else { 1.0_f32 };
     let y_mult = if matches.is_present("y_inv") { -1.0_f32 } else { 1.0_f32 }; 
+    let scale = matches.value_of("scale").unwrap_or("1e-6").parse::<f32>().unwrap_or(1e-6_f32);
     let old_state_owned = get_window_server_rotation_state(display, &backend)?;
     let mut old_state = old_state_owned.as_str();
 
@@ -293,8 +300,8 @@ fn main() -> Result<(), String> {
         let y_clean = y_raw.trim_end_matches('\n').parse::<i32>().unwrap_or(0);
 
         // Normalize vectors and apply multiplier
-        let x: f32 = (x_clean as f32) / 1e6 * x_mult;
-        let y: f32 = (y_clean as f32) / 1e6 * y_mult;
+        let x: f32 = (x_clean as f32) * x_mult * scale;
+        let y: f32 = (y_clean as f32) * y_mult * scale;
 
         for (_i, orient) in orientations.iter().enumerate() {
             let d = (x - orient.vector.0).powf(2.0) + (y - orient.vector.1).powf(2.0);
@@ -308,6 +315,8 @@ fn main() -> Result<(), String> {
         x_state = current_orient.x_state;
         matrix = current_orient.matrix;
 
+        //println!("x_raw {} y_raw {} x {} y {} -> state {}", x_clean, y_clean, x, y, new_state);
+        
         if new_state != old_state {
             let keyboard_state = if new_state == "normal" {
                 "enabled"
